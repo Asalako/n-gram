@@ -1,5 +1,5 @@
 /********************************************
- *File: DriverCombineFileInputFormat.java
+ *File: NGramCombineFileInputFormat.java
  *Usage: Driver
  ********************************************/
 import org.apache.hadoop.fs.Path;
@@ -13,7 +13,7 @@ import org.apache.hadoop.fs.Path;
 public class NGramCombineFileInputFormat {
 
     public static void main(String[] args) throws Exception {
-        JobConf conf = new JobConf("DriverCombineFileInputFormat");
+        JobConf conf = new JobConf("NGramCombineFileInputFormat");
         conf.set("mapred.max.split.size", "134217728");//128 MB
         conf.setJarByClass(NGramCombineFileInputFormat.class);
         String[] jobArgs = new GenericOptionsParser(conf, args)
