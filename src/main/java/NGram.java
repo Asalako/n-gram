@@ -10,43 +10,63 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.CombineTextInputFormat;
 //import org.apache.hadoop.mapred.lib.CombineTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-
+import org.apache.hadoop.mapreduce.Partitioner;
 import java.io.IOException;
-public class NGram {
-    public class MapperCIPWC extends Mapper<LongWritable, Text, Text, IntWritable>{
+import java.util.StringTokenizer;
 
-        private Text outKey = new Text();
-        private IntWritable outValue = new IntWritable(1);
+public class NGram {
+    public static class MapperCIPWC extends Mapper<LongWritable, Text, Text, IntWritable>{
+
+        private final Text word = new Text();
+        private final static IntWritable one = new IntWritable(1);
 
         @Override
         protected void map(LongWritable key, Text value, Context ctx) throws IOException, InterruptedException {
-            String line = value.toString();
-            String[] words = line.split("\t");
-            for(String s:words){
-                outKey.set(s);
-                ctx.write(outKey,outValue);
+            StringTokenizer itr = new StringTokenizer(value.toString().replaceAll("[^a-zA-Z ]", ""));
+            while (itr.hasMoreTokens()) {
+                word.set(itr.nextToken());
+                ctx.write(word, one);
             }
         }
     }
 
-    public class ReducerCIPWC extends Reducer<Text, IntWritable, Text, IntWritable>{
+    public static class ReducerCIPWC
+            extends Reducer<Text, IntWritable, Text, IntWritable> {
+        private IntWritable result = new IntWritable();
 
-        private Text outKey = new Text();
-        private IntWritable outValue = new IntWritable();
+        public void reduce(Text key, Iterable<IntWritable> values,
+                           Context context
+        ) throws IOException, InterruptedException {
+            int sum = 0;
+            for (IntWritable val : values) {
+                sum += val.get();
+            }
+            result.set(sum);
+            context.write(key, result);
+        }
+    }
+
+    public static class PartitionerCIWC extends Partitioner<Text, IntWritable> {
+
+
+        /**
+         *
+         * @param key
+         * @param value
+         * @param i
+         * @return
+         *
+         * Split the mapper's output by the numeric value of the first character of the word.
+         */
 
         @Override
-        protected void reduce(Text key, Iterable<IntWritable> values, Context ctx) throws IOException, InterruptedException {
-            int sum = 0;
-            for(IntWritable v: values){
-                sum += v.get();
-            }
-            outKey.set(key);
-            outValue.set(sum);
-            ctx.write(outKey, outValue);
+        public int getPartition(Text key, IntWritable value, int i) {
+            String word = key.toString();
+            int firstChar = word.charAt(0);
+            return ((firstChar-1) % i);
         }
-
     }
-    
+
     public static void main(String[] args) throws Exception {
         Configuration conf = new Configuration();
 
@@ -72,9 +92,9 @@ public class NGram {
         job.setInputFormatClass(CombineTextInputFormat.class);
         CombineTextInputFormat.addInputPath(job, new Path(args[0]));
 
-
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
-        job.setNumReduceTasks(4);
+        job.setNumReduceTasks(1);
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
 }
+
