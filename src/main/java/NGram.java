@@ -127,8 +127,8 @@ public class NGram {
         Job job2 = Job.getInstance(conf, "Sort by Value");
 
         job2.setJarByClass(NGram.class);
-        job2.setMapperClass(MapperCIPWC.class);
-        job2.setReducerClass(ReducerCIPWC.class);
+        job2.setMapperClass(MapTask.class);
+        job2.setReducerClass(ReduceTask.class);
 
         job2.setOutputKeyClass(Text.class);
         job2.setOutputValueClass(IntWritable.class);
