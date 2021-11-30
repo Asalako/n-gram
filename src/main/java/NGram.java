@@ -124,7 +124,7 @@ public class NGram {
         job.waitForCompletion(true);
 
         Configuration conf2 = new Configuration();
-        Job job2 = Job.getInstance(conf, "Sort by Value");
+        Job job2 = Job.getInstance(conf2, "Sort by Value");
 
         job2.setJarByClass(NGram.class);
         job2.setMapperClass(MapTask.class);
