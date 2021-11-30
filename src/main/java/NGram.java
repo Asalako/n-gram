@@ -9,6 +9,7 @@ import org.apache.hadoop.mapreduce.Job;
 //import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.CombineTextInputFormat;
 //import org.apache.hadoop.mapred.lib.CombineTextInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.Partitioner;
 import java.io.IOException;
@@ -46,6 +47,32 @@ public class NGram {
         }
     }
 
+    public static class MapTask extends
+            Mapper<LongWritable, Text, IntWritable, Text> {
+        private final static IntWritable one = new IntWritable(1);
+        public void map(LongWritable key, Text value, Context context)
+                throws java.io.IOException, InterruptedException {
+            String line = value.toString();
+            String[] tokens = line.split("\t"); // This is the delimiter between Key and Value
+            int valuePart = Integer.parseInt(tokens[1]);
+            context.write(new IntWritable(valuePart), new Text(tokens[0]));
+        }
+    }
+
+    public static class ReduceTask extends
+            Reducer<IntWritable, Text, IntWritable, Text> {
+        public void reduce(IntWritable key, Iterable<IntWritable> list, Context context)
+                throws java.io.IOException, InterruptedException {
+
+            for (IntWritable value : list) {
+
+                context.write(value, new Text(String.valueOf(key)));
+
+            }
+
+        }
+    }
+
     public static class PartitionerCIWC extends Partitioner<Text, IntWritable> {
 
 
@@ -76,7 +103,7 @@ public class NGram {
         // job with only one big file using the PartitionerWordCount job
         conf.set("mapreduce.input.fileinputformat.split.maxsize", Long.toString(128 * 1024 * 1024));
 
-        Job job = Job.getInstance(conf, "Combined Input & Partitioner Word Count");
+        Job job = Job.getInstance(conf, "Single N Gram");
         job.setJarByClass(NGram.class);
         job.setMapperClass(MapperCIPWC.class);
         job.setReducerClass(ReducerCIPWC.class);
@@ -94,7 +121,22 @@ public class NGram {
 
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
         job.setNumReduceTasks(1);
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
+        job.waitForCompletion(true);
+
+        Configuration conf2 = new Configuration();
+        Job job2 = Job.getInstance(conf, "Sort by Value");
+
+        job2.setJarByClass(NGram.class);
+        job2.setMapperClass(MapperCIPWC.class);
+        job2.setReducerClass(ReducerCIPWC.class);
+
+        job2.setOutputKeyClass(Text.class);
+        job2.setOutputValueClass(IntWritable.class);
+
+        FileInputFormat.addInputPath(job2, new Path(args[1]));
+        FileOutputFormat.setOutputPath(job2, new Path(args[2]));
+
+        System.exit(job2.waitForCompletion(true) ? 0 : 1);
     }
 }
 
