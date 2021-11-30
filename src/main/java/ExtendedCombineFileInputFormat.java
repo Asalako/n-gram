@@ -20,6 +20,7 @@ import org.apache.hadoop.mapred.lib.CombineFileInputFormat;
 import org.apache.hadoop.mapred.lib.CombineFileRecordReader;
 import org.apache.hadoop.mapred.lib.CombineFileSplit;
 
+
 @SuppressWarnings("deprecation")
 public class ExtendedCombineFileInputFormat extends
         CombineFileInputFormat<LongWritable, Text> {

@@ -21,14 +21,14 @@ public class WordCount {
 
         public void map(Object key, Text value, Context context
         ) throws IOException, InterruptedException {
-            StringTokenizer itr = new StringTokenizer(value.toString());
+            StringTokenizer itr = new StringTokenizer(value.toString().replaceAll("[^a-zA-Z ]", ""));
             while (itr.hasMoreTokens()) {
                 word.set(itr.nextToken());
                 context.write(word, one);
             }
         }
     }
-
+    //ReducerCIPWC
     public static class IntSumReducer
             extends Reducer<Text, IntWritable, Text, IntWritable> {
         private IntWritable result = new IntWritable();
@@ -54,7 +54,12 @@ public class WordCount {
         job.setReducerClass(IntSumReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
+        long num = 134217728;
+        FileInputFormat.setMinInputSplitSize(job, num);
         FileInputFormat.addInputPath(job, new Path(args[0]));
+
+        job.setNumReduceTasks(1);
+
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
